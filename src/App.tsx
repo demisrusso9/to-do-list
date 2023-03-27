@@ -1,4 +1,4 @@
-import React, { ChangeEvent, FormEvent, useState } from 'react'
+import React, { ChangeEvent, FormEvent, useReducer, useState } from 'react'
 
 import plusIcon from './assets/plus.svg'
 import clipboardIcon from './assets/clipboard.svg'
@@ -8,81 +8,82 @@ import uncheckIcon from './assets/uncheck.svg'
 import logoIcon from './assets/logo.svg'
 
 import styles from './App.module.scss'
-
-interface TodoProps {
-  id: number
-  description: string
-  status: boolean
-}
+import { Todos, todosReducer } from './reducers/todos/reducer'
+import {
+  changePlaceholderAction,
+  changeTodoTextAction,
+  completeTodoAction,
+  createNewTodoAction,
+  deleteTodoAction,
+} from './reducers/todos/actions'
 
 function App() {
-  const [todoText, setTodoText] = useState('')
-  const [todos, setTodos] = useState<TodoProps[]>([])
-  const [activePlaceholder, setActivePlaceholder] = useState(false)
+  const [todosState, dispatch] = useReducer(todosReducer, {
+    todos: [],
+    todoText: '',
+    activePlaceholder: false,
+  })
+
+  const { todos, todoText, activePlaceholder } = todosState
 
   function handleCreateNewTodo(e: FormEvent) {
     e.preventDefault()
 
     if (!todoText.trim()) return
 
-    const newTodo = {
+    const newTodo: Todos = {
       id: todos.length + 1,
       description: todoText,
-      status: false
+      status: false,
     }
 
-    setTodos([newTodo, ...todos])
-    setTodoText('')
+    dispatch(createNewTodoAction(newTodo))
   }
 
   function handleDeleteTodo(id: number) {
-    setTodos([...todos.filter(todo => todo.id !== id)])
+    dispatch(deleteTodoAction(id))
   }
 
   function handleCompletedTodo(id: number) {
-    let auxTodos = todos
-
-    auxTodos.forEach(todo => {
-      if (todo.id === id) {
-        todo.status = !todo.status
-      }
-    })
-
-    setTodos([...auxTodos])
+    dispatch(completeTodoAction(id))
   }
 
   function handleTodoTextChange(e: ChangeEvent<HTMLInputElement>) {
-    setTodoText(e.target.value)
+    dispatch(changeTodoTextAction(e.target.value))
   }
 
   function handleChangePlaceholderText() {
-    setActivePlaceholder(state => !state)
+    dispatch(changePlaceholderAction())
   }
 
   const isTodoListEmpty = todos.length === 0
   const createdTodos = todos.length
-  const completedTodos = todos.filter(todo => todo.status).length
+  const completedTodos = todos.filter((todo) => todo.status).length
 
   return (
     <>
       <header className={styles.header}>
-        <img src={logoIcon} alt='Logo icon' />
+        <img src={logoIcon} alt="Logo icon" />
       </header>
 
       <main className={styles.content}>
         <form onSubmit={handleCreateNewTodo}>
           <input
-            type='text'
-            placeholder={activePlaceholder ? 'Descrição da tarefa |' : 'Adicione uma nova tarefa'}
+            type="text"
+            placeholder={
+              activePlaceholder
+                ? 'Descrição da tarefa |'
+                : 'Adicione uma nova tarefa'
+            }
             value={todoText}
             onChange={handleTodoTextChange}
             onFocus={handleChangePlaceholderText}
             onBlur={handleChangePlaceholderText}
           />
 
-          <button type='submit'>
+          <button type="submit">
             Criar
-            <img src={plusIcon} alt='Plus icon' />
+            <img src={plusIcon} alt="Plus icon" />
           </button>
         </form>
 
@@ -93,36 +94,50 @@ function App() {
             </p>
             <p>
               Concluídas
-              <span>{createdTodos === 0 ? createdTodos : `${completedTodos} de ${createdTodos}`}</span>
+              <span>
+                {createdTodos === 0
+                  ? createdTodos
+                  : `${completedTodos} de ${createdTodos}`}
+              </span>
             </p>
           </div>
         </div>
 
         {isTodoListEmpty ? (
           <div className={styles.empty}>
-            <img src={clipboardIcon} alt='Clipboard icon' />
+            <img src={clipboardIcon} alt="Clipboard icon" />
 
             <strong>Você ainda não tem tarefas cadastradas</strong>
             <p>Crie tarefas e organize seus itens a fazer</p>
           </div>
         ) : (
           <ul className={styles.todoslist}>
-            {todos.map(todo => (
+            {todos.map((todo) => (
               <li key={todo.id}>
                 <button onClick={() => handleCompletedTodo(todo.id)}>
                   {todo.status ? (
-                    <img className={styles.checkedIcon} src={checkIcon} alt='Check icon' />
+                    <img
+                      className={styles.checkedIcon}
+                      src={checkIcon}
+                      alt="Check icon"
+                    />
                   ) : (
-                    <img className={styles.uncheckedIcon} src={uncheckIcon} alt='Uncheck icon' />
+                    <img
+                      className={styles.uncheckedIcon}
+                      src={uncheckIcon}
+                      alt="Uncheck icon"
+                    />
                   )}
                 </button>
 
-                <p className={todo.status ? styles.lineThrough : ''}>{todo.description}</p>
+                <p className={todo.status ? styles.lineThrough : ''}>
+                  {todo.description}
+                </p>
 
                 <img
                   className={styles.trashIcon}
                   src={trashIcon}
-                  alt='Trash icon'
+                  alt="Trash icon"
                   onClick={() => handleDeleteTodo(todo.id)}
                 />
               </li>
